@@ -51,7 +51,7 @@
 #ICON_DURATION="⏱️ "
 #ICON_LINES="±"
 #ICON_LIMIT="⏳ "
-#ICON_WEATHER="🏙️ "
+#ICON_WEATHER="✈️ "
 
 # --- colors ---
 # Available: $CYAN $MAGENTA $GREEN $YELLOW $BLUE $RED $WHITE $DIM

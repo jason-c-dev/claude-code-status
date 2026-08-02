@@ -49,7 +49,7 @@ SEGMENTS="path model git context cost"
 | `duration` | `⏱️ 1h 15m` | **Off by default.** Session wall-clock |
 | `lines` | `±+156 -42` | **Off by default.** Lines added/removed |
 | `limit` | `⏳ 24%` | **Off by default.** 5-hour rate limit; Claude.ai Pro/Max only, absent otherwise |
-| `weather` | `🏙️ PSP ☀️ 121°F` | **Off by default.** Needs `WEATHER_AIRPORT` too — see [Weather](#weather) |
+| `weather` | `✈️ PSP ☀️ 121°F` | **Off by default.** Needs `WEATHER_AIRPORT` too — see [Weather](#weather) |
 
 To turn a segment off, remove its name from the list. To add one, append it (or
 insert it where the user wants it in the order).
@@ -81,7 +81,7 @@ block (see the repo README's "When it runs").
 | `ICON_DURATION` | `"⏱️ "` | |
 | `ICON_LINES` | `"±"` | |
 | `ICON_LIMIT` | `"⏳ "` | |
-| `ICON_WEATHER` | `"🏙️ "` | |
+| `ICON_WEATHER` | `"✈️ "` | |
 | `COLOR_PATH` | `$CYAN` | |
 | `COLOR_MODEL` | `$MAGENTA` | |
 | `COLOR_GIT` | `$GREEN` | |
@@ -111,7 +111,7 @@ WEATHER_UNITS="F"              # C | F
 WEATHER_TTL=900                # seconds between background refreshes
 ```
 
-Renders as `🏙️ PSP ☀️ 121°F` — the code is the label, there's no separate display
+Renders as `✈️ PSP ☀️ 121°F` — the code is the label, there's no separate display
 field.
 
 **Airport codes only, and this is enforced.** The value must match exactly three
