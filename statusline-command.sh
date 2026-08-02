@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code status line:  <cwd> | <model> | ⎇ <branch> ✚n ↑n | ██████░░░░ 62%
+# Claude Code status line:  📁 <cwd> | <model> | 🌿 <branch> ✚n ↑n | ██████░░░░ 62% | 💰 $0.12
 #
 # Reads the session JSON Claude Code pipes on stdin. Every segment is optional —
 # a missing field (or a cwd that isn't a git repo) drops the segment AND its
@@ -15,6 +15,7 @@ model=$(echo "$input" | jq -r '.model.display_name // empty' 2>/dev/null)
 used=$(echo "$input" | jq -r '.context_window.used_percentage // empty' 2>/dev/null)
 winsize=$(echo "$input" | jq -r '.context_window.context_window_size // empty' 2>/dev/null)
 tokens=$(echo "$input" | jq -r '(.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0) | if . > 0 then . else empty end' 2>/dev/null)
+cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty' 2>/dev/null)
 
 CYAN=$'\033[96m'; MAGENTA=$'\033[95m'; GREEN=$'\033[92m'; YELLOW=$'\033[93m'
 BLUE=$'\033[94m'; RED=$'\033[91m'; WHITE=$'\033[97m'; DIM=$'\033[2;37m'; RESET=$'\033[0m'
@@ -43,7 +44,7 @@ if [ -n "$rawdir" ] && git -C "$rawdir" rev-parse --is-inside-work-tree >/dev/nu
   branch=$(git -C "$rawdir" rev-parse --abbrev-ref HEAD 2>/dev/null)
   [ "$branch" = "HEAD" ] && branch=$(git -C "$rawdir" rev-parse --short HEAD 2>/dev/null)
   if [ -n "$branch" ]; then
-    git_seg="${GREEN}⎇ ${branch}${RESET}"
+    git_seg="${GREEN}🌿 ${branch}${RESET}"
     dirty=$(git -C "$rawdir" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
     [ "${dirty:-0}" -gt 0 ] && git_seg+=" ${YELLOW}✚${dirty}${RESET}"
     counts=$(git -C "$rawdir" rev-list --left-right --count '@{u}...HEAD' 2>/dev/null)
@@ -84,8 +85,22 @@ if [ -n "$used" ]; then
   fi
 fi
 
+# --- session cost -------------------------------------------------------------
+# Claude Code computes this client-side and hands it over ready-made, so we don't
+# price tokens ourselves: cache reads and cache writes bill at different rates
+# from fresh input, and the token counts above are *current context*, not
+# cumulative session usage — a tokens x rate estimate would be wrong on both counts.
+cost_seg=""
+if [ -n "$cost" ]; then
+  costlabel=$(awk -v c="$cost" 'BEGIN {
+    if (c >= 0.01 || c <= 0) printf "$%.2f", c
+    else printf "$%.3f", c
+  }')
+  cost_seg="${YELLOW}💰 ${costlabel}${RESET}"
+fi
+
 segments=()
-[ -n "$dir" ] && segments+=("${CYAN}${dir}${RESET}")
+[ -n "$dir" ] && segments+=("${CYAN}📁 ${dir}${RESET}")
 if [ -n "$model" ]; then
   # Some display names already embed the size ("Opus 5 (1M context)") — don't double it.
   case "$(echo "$model" | tr '[:upper:]' '[:lower:]')" in
@@ -96,6 +111,7 @@ if [ -n "$model" ]; then
 fi
 [ -n "$git_seg" ] && segments+=("$git_seg")
 [ -n "$bar_seg" ] && segments+=("$bar_seg")
+[ -n "$cost_seg" ] && segments+=("$cost_seg")
 
 # Nothing resolved (malformed or empty stdin) — print nothing rather than a bare
 # separator or a stray jq error.
