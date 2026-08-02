@@ -156,22 +156,29 @@ this README); these four are implemented but off:
 | `duration` | `⏱️ 1h 15m` | Session wall-clock time |
 | `lines` | `±+156 -42` | Lines added / removed this session |
 | `limit` | `⏳ 24%` | 5-hour rate limit — Claude.ai Pro/Max only, absent otherwise |
-| `weather` | `🏙️ Austin, TX ☀️ 84°F` | Needs `WEATHER_LOCATION`. The only segment that uses the network — see [Weather](#weather) |
+| `weather` | `🏙️ PSP ☀️ 121°F` | Needs `WEATHER_AIRPORT`. The only segment that uses the network — see [Weather](#weather) |
 
 Since the line is event-driven, `duration` and `limit` freeze while the session is
 idle. Pair either with `refreshInterval` (above) if you want them ticking.
 
 ### Weather
 
-Off unless you both add `weather` to `SEGMENTS` **and** set a location:
+Off unless you both add `weather` to `SEGMENTS` **and** set an airport code:
 
 ```sh
 SEGMENTS="path model git context cost weather"
-WEATHER_LOCATION="Austin,TX"      # anything wttr.in geocodes: city, "City,ST", airport code
-WEATHER_LABEL="Austin, TX"        # display text; defaults to WEATHER_LOCATION
+WEATHER_AIRPORT="PSP"             # 3-letter IATA code, case-insensitive
 WEATHER_UNITS="F"                 # C | F
 WEATHER_TTL=900                   # seconds between refreshes
 ```
+
+Renders as `🏙️ PSP ☀️ 121°F`.
+
+**Airport codes only** — exactly three letters. City names are rejected, and the
+segment stays off rather than querying something you didn't intend. Two reasons:
+a code is always the same width so the line doesn't jump around as conditions
+change, and it's unambiguous where city names aren't (there are more than twenty
+Springfields). It also means the value is validated before it reaches a URL.
 
 This is the one segment that leaves your machine. It's built so that never costs you
 latency:
@@ -187,11 +194,11 @@ latency:
 - A stamp file is touched *before* the fetch starts, so concurrent sessions don't all
   fire requests at once.
 
-Data comes from [wttr.in](https://wttr.in), which handles geocoding, the
+Data comes from [wttr.in](https://wttr.in), which resolves the code and handles the
 condition-to-emoji mapping and unit conversion server-side — one request, no API key,
-no account. A failed or garbage lookup writes no cache and simply drops the segment.
-Your configured location is sent to that third party every `WEATHER_TTL` seconds;
-if that's not acceptable, leave the segment off.
+no account. A failed lookup writes no cache and simply drops the segment. Your
+configured airport code is sent to that third party every `WEATHER_TTL` seconds; if
+that's not acceptable, leave the segment off.
 
 Requires `curl` (present by default on macOS and most Linux). Cache lives in
 `$TMPDIR`, keyed on location and units.

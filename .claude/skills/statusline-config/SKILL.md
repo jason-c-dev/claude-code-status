@@ -49,7 +49,7 @@ SEGMENTS="path model git context cost"
 | `duration` | `⏱️ 1h 15m` | **Off by default.** Session wall-clock |
 | `lines` | `±+156 -42` | **Off by default.** Lines added/removed |
 | `limit` | `⏳ 24%` | **Off by default.** 5-hour rate limit; Claude.ai Pro/Max only, absent otherwise |
-| `weather` | `🏙️ Austin, TX ☀️ 84°F` | **Off by default.** Needs `WEATHER_LOCATION` too — see [Weather](#weather) |
+| `weather` | `🏙️ PSP ☀️ 121°F` | **Off by default.** Needs `WEATHER_AIRPORT` too — see [Weather](#weather) |
 
 To turn a segment off, remove its name from the list. To add one, append it (or
 insert it where the user wants it in the order).
@@ -106,27 +106,37 @@ The only segment that uses the network. Enabling it takes **two** keys — addin
 
 ```sh
 SEGMENTS="path model git context cost weather"
-WEATHER_LOCATION="Austin,TX"   # required: city, "City,ST", or airport code
-WEATHER_LABEL="Austin, TX"     # optional display text, defaults to WEATHER_LOCATION
+WEATHER_AIRPORT="PSP"          # required: 3-letter IATA code, case-insensitive
 WEATHER_UNITS="F"              # C | F
 WEATHER_TTL=900                # seconds between background refreshes
 ```
 
-Use `WEATHER_LABEL` when the user wants "City, ST" displayed but the lookup works
-better with a different string.
+Renders as `🏙️ PSP ☀️ 121°F` — the code is the label, there's no separate display
+field.
+
+**Airport codes only, and this is enforced.** The value must match exactly three
+letters or the segment stays off. If the user gives a city ("Palm Springs", "Austin,
+TX"), translate it to the nearest major airport code yourself and tell them which
+one you picked — don't put the city name in the config, it will simply be rejected.
+Some useful ones: PSP Palm Springs, SFO San Francisco, LAX Los Angeles, SEA Seattle,
+AUS Austin, JFK New York, LHR London, SYD Sydney, BNE Brisbane.
+
+If the user wants a place with no nearby airport, say so plainly rather than
+guessing a distant code.
 
 **Tell the user the first render will show no weather.** The fetch is a detached
 background process, so the segment only appears on the *second* update, once the
 cache is populated. This is expected — don't debug it as a failure. When verifying,
 run the preview once, `sleep 4`, then run it again to show the populated line.
 
-If it never appears after a few seconds, check in this order: is `curl` installed;
-is `WEATHER_LOCATION` actually set; does the location geocode
-(`curl -sf 'https://wttr.in/<loc>?format=%c%t&m'`). A location wttr.in can't resolve
+If it never appears after a few seconds, check in this order: is `WEATHER_AIRPORT`
+exactly three letters (a city name or 4-letter ICAO code is rejected before any
+request is made); is `curl` installed; does the code resolve
+(`curl -sf 'https://wttr.in/PSP?format=%c%t&m'`). A code wttr.in can't resolve
 writes no cache and silently drops the segment.
 
-Mention once, when first enabling it, that the configured location goes to wttr.in
-every `WEATHER_TTL` seconds. Don't belabour it on later changes.
+Mention once, when first enabling it, that the airport code goes to wttr.in every
+`WEATHER_TTL` seconds. Don't belabour it on later changes.
 
 ## Verifying
 

@@ -37,11 +37,14 @@ BAR_EMPTY="░"
 CONTEXT_SHOW_TOKENS=1    # "· 620.2K tok" after the bar
 
 # Weather. The ONLY segment that touches the network, and it's off unless you both
-# add `weather` to SEGMENTS and set WEATHER_LOCATION. Fetches happen in a detached
+# add `weather` to SEGMENTS and set WEATHER_AIRPORT. Fetches happen in a detached
 # background process and are cached; rendering only ever reads the cache, so the
 # status line never blocks on the network.
-WEATHER_LOCATION=""      # "San Francisco" / "Austin,TX" / "SFO" — required
-WEATHER_LABEL=""         # display text; defaults to WEATHER_LOCATION
+#
+# Airport codes only — a 3-letter IATA code, nothing else. City names geocode
+# ambiguously and produce long, uneven labels; a code is exactly three characters
+# and unambiguous, which is what keeps this segment short.
+WEATHER_AIRPORT=""       # "PSP" / "SFO" / "LHR" — required, 3 letters
 WEATHER_UNITS="C"        # C | F
 WEATHER_TTL=900          # seconds before a background refresh is triggered
 
@@ -238,11 +241,18 @@ fi
 # wttr.in does geocoding, condition->emoji and unit conversion server-side, so a
 # reading costs one request and no API key.
 weather_seg=""
-if enabled weather && [ -n "$WEATHER_LOCATION" ] && command -v curl >/dev/null 2>&1; then
-  # Cache key covers location+units so changing either doesn't serve stale data
-  # from the old settings.
-  wkey=$(printf '%s-%s' "$WEATHER_LOCATION" "$WEATHER_UNITS" | tr -c '[:alnum:]' '-')
-  wcache="${TMPDIR:-/tmp}/claude-statusline-weather-${wkey}"
+# Normalise to an uppercase 3-letter code. Anything else — a city name, a typo, a
+# code with punctuation — fails this check and the segment stays off, rather than
+# silently querying something the user didn't intend.
+wcode=""
+case "$WEATHER_AIRPORT" in
+  [A-Za-z][A-Za-z][A-Za-z]) wcode=$(printf '%s' "$WEATHER_AIRPORT" | tr '[:lower:]' '[:upper:]') ;;
+esac
+
+if enabled weather && [ -n "$wcode" ] && command -v curl >/dev/null 2>&1; then
+  # Cache key covers code+units so changing either doesn't serve stale data from
+  # the old settings.
+  wcache="${TMPDIR:-/tmp}/claude-statusline-weather-${wcode}-${WEATHER_UNITS}"
   wstamp="${wcache}.stamp"
 
   # mtime in epoch seconds, BSD (macOS) and GNU (Linux) spellings.
@@ -253,10 +263,9 @@ if enabled weather && [ -n "$WEATHER_LOCATION" ] && command -v curl >/dev/null 2
     # one is already in flight.
     : > "$wstamp" 2>/dev/null
     case "$WEATHER_UNITS" in [Ff]*) wunit="u" ;; *) wunit="m" ;; esac
-    wloc=$(printf '%s' "$WEATHER_LOCATION" | sed 's/ /%20/g')
     (
       wtmp="${wcache}.$$"
-      if curl -sf --max-time 8 "https://wttr.in/${wloc}?format=%c%t&${wunit}" -o "$wtmp" 2>/dev/null; then
+      if curl -sf --max-time 8 "https://wttr.in/${wcode}?format=%c%t&${wunit}" -o "$wtmp" 2>/dev/null; then
         # Atomic swap so a render never sees a half-written file.
         mv -f "$wtmp" "$wcache" 2>/dev/null
       else
@@ -270,8 +279,7 @@ if enabled weather && [ -n "$WEATHER_LOCATION" ] && command -v curl >/dev/null 2
     # wttr.in returns e.g. "🌤️ +12°C" — drop the + and collapse whitespace.
     wraw=$(tr -d '\n' < "$wcache" | sed 's/+//g; s/  */ /g; s/^ *//; s/ *$//')
     if [ -n "$wraw" ]; then
-      wlabel="${WEATHER_LABEL:-$WEATHER_LOCATION}"
-      weather_seg="${COLOR_WEATHER}${ICON_WEATHER}${wlabel}${RESET} ${WHITE}${wraw}${RESET}"
+      weather_seg="${COLOR_WEATHER}${ICON_WEATHER}${wcode}${RESET} ${WHITE}${wraw}${RESET}"
     fi
   fi
 fi

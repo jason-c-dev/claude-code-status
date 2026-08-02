@@ -36,10 +36,11 @@
 #CONTEXT_SHOW_TOKENS=1     # the "· 620.2K tok" suffix
 
 # --- weather (the ONLY segment that uses the network; off by default) ---
-# Needs `weather` in SEGMENTS *and* a location. Fetched in the background and
-# cached, so rendering never blocks. Sends your location to wttr.in every TTL.
-#WEATHER_LOCATION=""        # "Austin,TX" / "San Francisco" / "SFO"
-#WEATHER_LABEL=""           # display text; defaults to WEATHER_LOCATION
+# Needs `weather` in SEGMENTS *and* an airport code. Fetched in the background
+# and cached, so rendering never blocks. Sends the code to wttr.in every TTL.
+# Airport codes only: exactly 3 letters, case-insensitive. Anything else — a city
+# name, a 4-letter ICAO code — is rejected and the segment stays off.
+#WEATHER_AIRPORT=""         # "PSP" / "SFO" / "LHR"
 #WEATHER_UNITS="C"          # C | F
 #WEATHER_TTL=900            # seconds between refreshes
 
