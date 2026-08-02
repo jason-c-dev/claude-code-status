@@ -1,0 +1,3 @@
+# Per-machine Claude Code settings (permissions etc.) — not shared.
+# The skill under .claude/skills/ IS tracked; only local settings are ignored.
+.claude/settings.local.json

@@ -1,0 +1,73 @@
+# Example ~/.claude/statusline.conf
+#
+# Every line below is commented out and shows the DEFAULT value. Copy this file to
+# ~/.claude/statusline.conf and uncomment only the keys you want to change — a conf
+# that restates the defaults silently pins them, so you'd stop picking up upstream
+# changes. This file is plain bash, sourced by statusline-command.sh.
+#
+# Don't edit statusline-command.sh directly: a `git pull` would clobber your
+# preferences. That's the whole point of this file.
+
+# --- which segments, in display order ---
+# Available: path model git context cost duration lines limit
+# duration, lines and limit are off by default.
+#SEGMENTS="path model git context cost"
+
+# --- separator ---
+#SEPARATOR=" | "
+#SEP_COLOR="$DIM"
+
+# --- path ---
+#PATH_STYLE="tilde"        # tilde | full | basename
+
+# --- model ---
+#MODEL_SHOW_WINDOW=1       # append (1M) / (200K)
+
+# --- git ---
+#GIT_SHOW_DIRTY=1          # the ✚n uncommitted count
+#GIT_SHOW_AHEAD_BEHIND=1   # the ↑n / ↓n upstream counts
+
+# --- context bar ---
+#BAR_WIDTH=10
+#BAR_WARN=30               # % where the bar turns yellow
+#BAR_CRIT=60               # % where it turns red
+#BAR_FILLED="█"
+#BAR_EMPTY="░"
+#CONTEXT_SHOW_TOKENS=1     # the "· 620.2K tok" suffix
+
+# --- icons (keep the trailing space; set "" to drop an icon) ---
+#ICON_PATH="📁 "
+#ICON_GIT="🌿 "
+#ICON_COST="💰 "
+#ICON_DURATION="⏱ "
+#ICON_LINES="±"
+#ICON_LIMIT="⏳ "
+
+# --- colors ---
+# Available: $CYAN $MAGENTA $GREEN $YELLOW $BLUE $RED $WHITE $DIM
+# For anything else use a raw escape, noting the $'...' quoting:
+#   COLOR_PATH=$'\033[38;5;208m'
+#COLOR_PATH="$CYAN"
+#COLOR_MODEL="$MAGENTA"
+#COLOR_GIT="$GREEN"
+#COLOR_DIRTY="$YELLOW"
+#COLOR_SYNC="$BLUE"
+#COLOR_COST="$YELLOW"
+#COLOR_DURATION="$WHITE"
+#COLOR_LINES="$WHITE"
+#COLOR_LIMIT="$WHITE"
+
+# --- a few worked examples ---
+# Minimal, no icons:
+#SEGMENTS="model context"
+#ICON_PATH=""
+#
+# Everything on, cost-focused ordering:
+#SEGMENTS="path git context cost duration lines"
+#
+# Wide bar, no token count, ASCII only (for terminals without emoji):
+#BAR_WIDTH=20
+#CONTEXT_SHOW_TOKENS=0
+#BAR_FILLED="#"
+#BAR_EMPTY="-"
+#ICON_PATH=""; ICON_GIT="git:"; ICON_COST="$"
