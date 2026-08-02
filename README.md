@@ -2,7 +2,8 @@
 
 A colorful, informative [status line](https://code.claude.com/docs/en/statusline) for
 [Claude Code](https://claude.com/claude-code). Pure bash + `jq` + `git` — no other
-dependencies, no network calls.
+dependencies, and no network calls unless you opt into the
+[weather segment](#weather).
 
 ```
 📁 ~/dev/my-project | Fable 5 (1M) | 🌿 main ✚3 ↑1 | ██████░░░░ 62% · 620.2K tok | 💰 $1.23
@@ -18,9 +19,9 @@ dependencies, no network calls.
 | Context bar | `██████░░░░ 62% · 620.2K tok` | 10-block usage bar — green &lt;30%, yellow 30–59%, red ≥60% — plus exact percentage and the live token count currently in context |
 | Cost | `💰 $1.23` | Yellow. Claude Code's own client-side estimate of the session cost (`cost.total_cost_usd`), not a figure this script derives from tokens. Drops to 3 decimals under a cent. Resets when `/clear` starts a new session. |
 
-Three further segments ship **disabled** — `duration`, `lines` and `limit`. They cost
-nothing while off (each is computed lazily), and any of the eight can be turned on,
-off, or reordered from a config file. See [Configuring](#configuring).
+Four further segments ship **disabled** — `duration`, `lines`, `limit` and `weather`.
+They cost nothing while off (each is computed lazily), and any of the nine can be
+turned on, off, or reordered from a config file. See [Configuring](#configuring).
 
 Every segment is optional: if a field is missing from the session JSON (early in a
 session, or outside a git repo), the segment **and its separator** drop cleanly
@@ -146,18 +147,54 @@ BAR_WIDTH=20
 CONTEXT_SHOW_TOKENS=0
 ```
 
-`SEGMENTS` controls **both which segments appear and their order**. Five of the eight
+`SEGMENTS` controls **both which segments appear and their order**. Five of the nine
 segments are on by default (`path model git context cost`, the table at the top of
-this README); these three are implemented but off:
+this README); these four are implemented but off:
 
 | Name | Renders | Notes |
 |------|---------|-------|
 | `duration` | `⏱ 1h 15m` | Session wall-clock time |
 | `lines` | `±+156 -42` | Lines added / removed this session |
 | `limit` | `⏳ 24%` | 5-hour rate limit — Claude.ai Pro/Max only, absent otherwise |
+| `weather` | `🏙 Austin, TX ☀️ 84°F` | Needs `WEATHER_LOCATION`. The only segment that uses the network — see [Weather](#weather) |
 
 Since the line is event-driven, `duration` and `limit` freeze while the session is
 idle. Pair either with `refreshInterval` (above) if you want them ticking.
+
+### Weather
+
+Off unless you both add `weather` to `SEGMENTS` **and** set a location:
+
+```sh
+SEGMENTS="path model git context cost weather"
+WEATHER_LOCATION="Austin,TX"      # anything wttr.in geocodes: city, "City,ST", airport code
+WEATHER_LABEL="Austin, TX"        # display text; defaults to WEATHER_LOCATION
+WEATHER_UNITS="F"                 # C | F
+WEATHER_TTL=900                   # seconds between refreshes
+```
+
+This is the one segment that leaves your machine. It's built so that never costs you
+latency:
+
+- **Rendering never waits on the network.** It reads a cache file and prints whatever
+  is there. A reading takes ~850ms to fetch — far outside the 300ms debounce — so a
+  blocking call would get the status line cancelled on nearly every render.
+- **Refreshes are detached background processes** with every file descriptor
+  redirected, written to a temp file and moved into place atomically, so a render
+  never sees a half-written cache.
+- **The first render after enabling shows nothing**, then the segment appears once
+  the fetch lands. That's expected, not a failure.
+- A stamp file is touched *before* the fetch starts, so concurrent sessions don't all
+  fire requests at once.
+
+Data comes from [wttr.in](https://wttr.in), which handles geocoding, the
+condition-to-emoji mapping and unit conversion server-side — one request, no API key,
+no account. A failed or garbage lookup writes no cache and simply drops the segment.
+Your configured location is sent to that third party every `WEATHER_TTL` seconds;
+if that's not acceptable, leave the segment off.
+
+Requires `curl` (present by default on macOS and most Linux). Cache lives in
+`$TMPDIR`, keyed on location and units.
 
 Other keys cover the separator, path style, per-segment colors and icons, bar
 width/characters, and the yellow/red thresholds — all listed in the example file.

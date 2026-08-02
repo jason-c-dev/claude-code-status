@@ -49,6 +49,7 @@ SEGMENTS="path model git context cost"
 | `duration` | `⏱ 1h 15m` | **Off by default.** Session wall-clock |
 | `lines` | `±+156 -42` | **Off by default.** Lines added/removed |
 | `limit` | `⏳ 24%` | **Off by default.** 5-hour rate limit; Claude.ai Pro/Max only, absent otherwise |
+| `weather` | `🏙 Austin, TX ☀️ 84°F` | **Off by default.** Needs `WEATHER_LOCATION` too — see [Weather](#weather) |
 
 To turn a segment off, remove its name from the list. To add one, append it (or
 insert it where the user wants it in the order).
@@ -95,6 +96,35 @@ expand in bash).
 
 The context bar's green/yellow/red are wired to `BAR_WARN`/`BAR_CRIT` rather than the
 `COLOR_*` variables, since they signal severity.
+
+## Weather
+
+The only segment that uses the network. Enabling it takes **two** keys — adding
+`weather` to `SEGMENTS` alone does nothing:
+
+```sh
+SEGMENTS="path model git context cost weather"
+WEATHER_LOCATION="Austin,TX"   # required: city, "City,ST", or airport code
+WEATHER_LABEL="Austin, TX"     # optional display text, defaults to WEATHER_LOCATION
+WEATHER_UNITS="F"              # C | F
+WEATHER_TTL=900                # seconds between background refreshes
+```
+
+Use `WEATHER_LABEL` when the user wants "City, ST" displayed but the lookup works
+better with a different string.
+
+**Tell the user the first render will show no weather.** The fetch is a detached
+background process, so the segment only appears on the *second* update, once the
+cache is populated. This is expected — don't debug it as a failure. When verifying,
+run the preview once, `sleep 4`, then run it again to show the populated line.
+
+If it never appears after a few seconds, check in this order: is `curl` installed;
+is `WEATHER_LOCATION` actually set; does the location geocode
+(`curl -sf 'https://wttr.in/<loc>?format=%c%t&m'`). A location wttr.in can't resolve
+writes no cache and silently drops the segment.
+
+Mention once, when first enabling it, that the configured location goes to wttr.in
+every `WEATHER_TTL` seconds. Don't belabour it on later changes.
 
 ## Verifying
 

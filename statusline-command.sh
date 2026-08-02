@@ -8,7 +8,8 @@
 # Which segments appear, in what order, and how they look is all controlled by
 # the settings below. Override any of them in ~/.claude/statusline.conf rather
 # than editing this file, so a `git pull` never clobbers your preferences.
-# Never touches the network.
+# No network access unless you explicitly enable the `weather` segment, which is
+# the sole exception and is off by default.
 
 input=$(cat)
 
@@ -18,7 +19,7 @@ BLUE=$'\033[94m'; RED=$'\033[91m'; WHITE=$'\033[97m'; DIM=$'\033[2;37m'; RESET=$
 # ---- settings (override in ~/.claude/statusline.conf) ------------------------
 
 # Which segments to show, in display order. Available:
-#   path model git context cost duration lines limit
+#   path model git context cost duration lines limit weather
 SEGMENTS="path model git context cost"
 
 SEPARATOR=" | "          # text between segments
@@ -35,12 +36,22 @@ BAR_FILLED="█"
 BAR_EMPTY="░"
 CONTEXT_SHOW_TOKENS=1    # "· 620.2K tok" after the bar
 
+# Weather. The ONLY segment that touches the network, and it's off unless you both
+# add `weather` to SEGMENTS and set WEATHER_LOCATION. Fetches happen in a detached
+# background process and are cached; rendering only ever reads the cache, so the
+# status line never blocks on the network.
+WEATHER_LOCATION=""      # "San Francisco" / "Austin,TX" / "SFO" — required
+WEATHER_LABEL=""         # display text; defaults to WEATHER_LOCATION
+WEATHER_UNITS="C"        # C | F
+WEATHER_TTL=900          # seconds before a background refresh is triggered
+
 ICON_PATH="📁 "
 ICON_GIT="🌿 "
 ICON_COST="💰 "
 ICON_DURATION="⏱ "
 ICON_LINES="±"
 ICON_LIMIT="⏳ "
+ICON_WEATHER="🏙 "
 
 COLOR_PATH="$CYAN"
 COLOR_MODEL="$MAGENTA"
@@ -51,6 +62,7 @@ COLOR_COST="$YELLOW"
 COLOR_DURATION="$WHITE"
 COLOR_LINES="$WHITE"
 COLOR_LIMIT="$WHITE"
+COLOR_WEATHER="$CYAN"
 
 CONFIG="${CLAUDE_STATUSLINE_CONFIG:-$HOME/.claude/statusline.conf}"
 [ -f "$CONFIG" ] && . "$CONFIG"
@@ -217,6 +229,53 @@ if enabled limit; then
   fi
 fi
 
+# ---- weather -----------------------------------------------------------------
+# The only segment that leaves the machine. Two rules keep it honest:
+#   1. Rendering NEVER waits on the network — it reads a cache file and prints
+#      whatever is there (nothing, on the very first run).
+#   2. A refresh is a detached background process with every fd redirected, so
+#      Claude Code's 300ms debounce can't be held open by a slow request.
+# wttr.in does geocoding, condition->emoji and unit conversion server-side, so a
+# reading costs one request and no API key.
+weather_seg=""
+if enabled weather && [ -n "$WEATHER_LOCATION" ] && command -v curl >/dev/null 2>&1; then
+  # Cache key covers location+units so changing either doesn't serve stale data
+  # from the old settings.
+  wkey=$(printf '%s-%s' "$WEATHER_LOCATION" "$WEATHER_UNITS" | tr -c '[:alnum:]' '-')
+  wcache="${TMPDIR:-/tmp}/claude-statusline-weather-${wkey}"
+  wstamp="${wcache}.stamp"
+
+  # mtime in epoch seconds, BSD (macOS) and GNU (Linux) spellings.
+  wmtime=$(stat -f %m "$wstamp" 2>/dev/null || stat -c %Y "$wstamp" 2>/dev/null || echo 0)
+  wnow=$(date +%s)
+  if [ $(( wnow - ${wmtime:-0} )) -ge "${WEATHER_TTL:-900}" ]; then
+    # Stamp FIRST, so concurrent status line runs don't all fire a request while
+    # one is already in flight.
+    : > "$wstamp" 2>/dev/null
+    case "$WEATHER_UNITS" in [Ff]*) wunit="u" ;; *) wunit="m" ;; esac
+    wloc=$(printf '%s' "$WEATHER_LOCATION" | sed 's/ /%20/g')
+    (
+      wtmp="${wcache}.$$"
+      if curl -sf --max-time 8 "https://wttr.in/${wloc}?format=%c%t&${wunit}" -o "$wtmp" 2>/dev/null; then
+        # Atomic swap so a render never sees a half-written file.
+        mv -f "$wtmp" "$wcache" 2>/dev/null
+      else
+        rm -f "$wtmp" 2>/dev/null
+      fi
+    ) >/dev/null 2>&1 </dev/null &
+    disown 2>/dev/null
+  fi
+
+  if [ -s "$wcache" ]; then
+    # wttr.in returns e.g. "🌤️ +12°C" — drop the + and collapse whitespace.
+    wraw=$(tr -d '\n' < "$wcache" | sed 's/+//g; s/  */ /g; s/^ *//; s/ *$//')
+    if [ -n "$wraw" ]; then
+      wlabel="${WEATHER_LABEL:-$WEATHER_LOCATION}"
+      weather_seg="${COLOR_WEATHER}${ICON_WEATHER}${wlabel}${RESET} ${WHITE}${wraw}${RESET}"
+    fi
+  fi
+fi
+
 # ---- render ------------------------------------------------------------------
 segments=()
 for name in $SEGMENTS; do
@@ -229,6 +288,7 @@ for name in $SEGMENTS; do
     duration) [ -n "$dur_seg" ]   && segments+=("$dur_seg") ;;
     lines)    [ -n "$lines_seg" ] && segments+=("$lines_seg") ;;
     limit)    [ -n "$limit_seg" ] && segments+=("$limit_seg") ;;
+    weather)  [ -n "$weather_seg" ] && segments+=("$weather_seg") ;;
   esac
 done
 

@@ -9,8 +9,8 @@
 # preferences. That's the whole point of this file.
 
 # --- which segments, in display order ---
-# Available: path model git context cost duration lines limit
-# duration, lines and limit are off by default.
+# Available: path model git context cost duration lines limit weather
+# duration, lines, limit and weather are off by default.
 #SEGMENTS="path model git context cost"
 
 # --- separator ---
@@ -35,6 +35,14 @@
 #BAR_EMPTY="░"
 #CONTEXT_SHOW_TOKENS=1     # the "· 620.2K tok" suffix
 
+# --- weather (the ONLY segment that uses the network; off by default) ---
+# Needs `weather` in SEGMENTS *and* a location. Fetched in the background and
+# cached, so rendering never blocks. Sends your location to wttr.in every TTL.
+#WEATHER_LOCATION=""        # "Austin,TX" / "San Francisco" / "SFO"
+#WEATHER_LABEL=""           # display text; defaults to WEATHER_LOCATION
+#WEATHER_UNITS="C"          # C | F
+#WEATHER_TTL=900            # seconds between refreshes
+
 # --- icons (keep the trailing space; set "" to drop an icon) ---
 #ICON_PATH="📁 "
 #ICON_GIT="🌿 "
@@ -42,6 +50,7 @@
 #ICON_DURATION="⏱ "
 #ICON_LINES="±"
 #ICON_LIMIT="⏳ "
+#ICON_WEATHER="🏙 "
 
 # --- colors ---
 # Available: $CYAN $MAGENTA $GREEN $YELLOW $BLUE $RED $WHITE $DIM
@@ -56,6 +65,7 @@
 #COLOR_DURATION="$WHITE"
 #COLOR_LINES="$WHITE"
 #COLOR_LIMIT="$WHITE"
+#COLOR_WEATHER="$CYAN"
 
 # --- a few worked examples ---
 # Minimal, no icons:
