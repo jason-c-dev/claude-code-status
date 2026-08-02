@@ -49,7 +49,7 @@ SEGMENTS="path model git context cost"
 | `duration` | `⏱️ 1h 15m` | **Off by default.** Session wall-clock |
 | `lines` | `±+156 -42` | **Off by default.** Lines added/removed |
 | `limit` | `⏳ 24%` | **Off by default.** 5-hour rate limit; Claude.ai Pro/Max only, absent otherwise |
-| `weather` | `✈️ PSP ☀️ 121°F` | **Off by default.** Needs `WEATHER_AIRPORT` too — see [Weather](#weather) |
+| `weather` | `✈️ SFO ☀️ 64°F` | **Off by default.** Needs `WEATHER_AIRPORT` too — see [Weather](#weather) |
 
 To turn a segment off, remove its name from the list. To add one, append it (or
 insert it where the user wants it in the order).
@@ -106,19 +106,19 @@ The only segment that uses the network. Enabling it takes **two** keys — addin
 
 ```sh
 SEGMENTS="path model git context cost weather"
-WEATHER_AIRPORT="PSP"          # required: 3-letter IATA code, case-insensitive
+WEATHER_AIRPORT="SFO"          # required: 3-letter IATA code, case-insensitive
 WEATHER_UNITS="F"              # C | F
 WEATHER_TTL=900                # seconds between background refreshes
 ```
 
-Renders as `✈️ PSP ☀️ 121°F` — the code is the label, there's no separate display
+Renders as `✈️ SFO ☀️ 64°F` — the code is the label, there's no separate display
 field.
 
 **Airport codes only, and this is enforced.** The value must match exactly three
-letters or the segment stays off. If the user gives a city ("Palm Springs", "Austin,
+letters or the segment stays off. If the user gives a city ("Portland", "Austin,
 TX"), translate it to the nearest major airport code yourself and tell them which
 one you picked — don't put the city name in the config, it will simply be rejected.
-Some useful ones: PSP Palm Springs, SFO San Francisco, LAX Los Angeles, SEA Seattle,
+Some useful ones: SFO San Francisco, LAX Los Angeles, SEA Seattle, DEN Denver,
 AUS Austin, JFK New York, LHR London, SYD Sydney, BNE Brisbane.
 
 If the user wants a place with no nearby airport, say so plainly rather than
@@ -132,7 +132,7 @@ run the preview once, `sleep 4`, then run it again to show the populated line.
 If it never appears after a few seconds, check in this order: is `WEATHER_AIRPORT`
 exactly three letters (a city name or 4-letter ICAO code is rejected before any
 request is made); is `curl` installed; does the code resolve
-(`curl -sf 'https://wttr.in/PSP?format=%c%t&m'`). A code wttr.in can't resolve
+(`curl -sf 'https://wttr.in/SFO?format=%c%t&m'`). A code wttr.in can't resolve
 writes no cache and silently drops the segment.
 
 Mention once, when first enabling it, that the airport code goes to wttr.in every

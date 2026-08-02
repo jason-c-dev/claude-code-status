@@ -40,7 +40,7 @@
 # and cached, so rendering never blocks. Sends the code to wttr.in every TTL.
 # Airport codes only: exactly 3 letters, case-insensitive. Anything else — a city
 # name, a 4-letter ICAO code — is rejected and the segment stays off.
-#WEATHER_AIRPORT=""         # "PSP" / "SFO" / "LHR"
+#WEATHER_AIRPORT=""         # "SFO" / "LHR" / "SYD"
 #WEATHER_UNITS="C"          # C | F
 #WEATHER_TTL=900            # seconds between refreshes
 

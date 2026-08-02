@@ -44,7 +44,7 @@ CONTEXT_SHOW_TOKENS=1    # "· 620.2K tok" after the bar
 # Airport codes only — a 3-letter IATA code, nothing else. City names geocode
 # ambiguously and produce long, uneven labels; a code is exactly three characters
 # and unambiguous, which is what keeps this segment short.
-WEATHER_AIRPORT=""       # "PSP" / "SFO" / "LHR" — required, 3 letters
+WEATHER_AIRPORT=""       # "SFO" / "LHR" / "SYD" — required, 3 letters
 WEATHER_UNITS="C"        # C | F
 WEATHER_TTL=900          # seconds before a background refresh is triggered
 
