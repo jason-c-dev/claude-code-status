@@ -48,10 +48,10 @@ WEATHER_TTL=900          # seconds before a background refresh is triggered
 ICON_PATH="📁 "
 ICON_GIT="🌿 "
 ICON_COST="💰 "
-ICON_DURATION="⏱ "
+ICON_DURATION="⏱️ "
 ICON_LINES="±"
 ICON_LIMIT="⏳ "
-ICON_WEATHER="🏙 "
+ICON_WEATHER="🏙️ "
 
 COLOR_PATH="$CYAN"
 COLOR_MODEL="$MAGENTA"

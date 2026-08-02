@@ -153,10 +153,10 @@ this README); these four are implemented but off:
 
 | Name | Renders | Notes |
 |------|---------|-------|
-| `duration` | `⏱ 1h 15m` | Session wall-clock time |
+| `duration` | `⏱️ 1h 15m` | Session wall-clock time |
 | `lines` | `±+156 -42` | Lines added / removed this session |
 | `limit` | `⏳ 24%` | 5-hour rate limit — Claude.ai Pro/Max only, absent otherwise |
-| `weather` | `🏙 Austin, TX ☀️ 84°F` | Needs `WEATHER_LOCATION`. The only segment that uses the network — see [Weather](#weather) |
+| `weather` | `🏙️ Austin, TX ☀️ 84°F` | Needs `WEATHER_LOCATION`. The only segment that uses the network — see [Weather](#weather) |
 
 Since the line is event-driven, `duration` and `limit` freeze while the session is
 idle. Pair either with `refreshInterval` (above) if you want them ticking.

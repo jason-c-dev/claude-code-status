@@ -46,10 +46,10 @@ SEGMENTS="path model git context cost"
 | `git` | `🌿 main ✚3 ↑1` | Only inside a git repo |
 | `context` | `██████░░░░ 62% · 620.2K tok` | |
 | `cost` | `💰 \$1.23` | Claude Code's client-side estimate (the `\` is escaping, not literal) |
-| `duration` | `⏱ 1h 15m` | **Off by default.** Session wall-clock |
+| `duration` | `⏱️ 1h 15m` | **Off by default.** Session wall-clock |
 | `lines` | `±+156 -42` | **Off by default.** Lines added/removed |
 | `limit` | `⏳ 24%` | **Off by default.** 5-hour rate limit; Claude.ai Pro/Max only, absent otherwise |
-| `weather` | `🏙 Austin, TX ☀️ 84°F` | **Off by default.** Needs `WEATHER_LOCATION` too — see [Weather](#weather) |
+| `weather` | `🏙️ Austin, TX ☀️ 84°F` | **Off by default.** Needs `WEATHER_LOCATION` too — see [Weather](#weather) |
 
 To turn a segment off, remove its name from the list. To add one, append it (or
 insert it where the user wants it in the order).
@@ -78,9 +78,10 @@ block (see the repo README's "When it runs").
 | `ICON_PATH` | `"📁 "` | Include the trailing space; set `""` to drop the icon |
 | `ICON_GIT` | `"🌿 "` | |
 | `ICON_COST` | `"💰 "` | |
-| `ICON_DURATION` | `"⏱ "` | |
+| `ICON_DURATION` | `"⏱️ "` | |
 | `ICON_LINES` | `"±"` | |
 | `ICON_LIMIT` | `"⏳ "` | |
+| `ICON_WEATHER` | `"🏙️ "` | |
 | `COLOR_PATH` | `$CYAN` | |
 | `COLOR_MODEL` | `$MAGENTA` | |
 | `COLOR_GIT` | `$GREEN` | |
@@ -88,6 +89,7 @@ block (see the repo README's "When it runs").
 | `COLOR_SYNC` | `$BLUE` | `↑n`/`↓n` |
 | `COLOR_COST` | `$YELLOW` | |
 | `COLOR_DURATION` / `COLOR_LINES` / `COLOR_LIMIT` | `$WHITE` | |
+| `COLOR_WEATHER` | `$CYAN` | |
 
 Color variables available: `$CYAN $MAGENTA $GREEN $YELLOW $BLUE $RED $WHITE $DIM`.
 For anything outside those, use a raw 256-color escape:
@@ -161,6 +163,12 @@ Use this when offering the user a choice between two looks.
   → ~30ms per invocation. Worth suggesting if the user reports lag in a large repo.
 - Icons are mostly double-width emoji. If the user reports boxes or misalignment,
   offer Nerd Font glyphs (``, ``) or plain ASCII (`>`, `@`) via the `ICON_*` keys.
+- **If an icon looks cramped or half-width next to its neighbours, the cause is
+  usually a missing variation selector, not a missing space.** Codepoints like
+  U+1F3D9 (🏙) and U+23F1 (⏱) default to *text* presentation and render narrow;
+  appending U+FE0F forces emoji presentation and full width. Check with
+  `printf '%s' "$icon" | hexdump -C` and look for a trailing `ef b8 8f`. Adding a
+  second space instead just over-pads on terminals that render it wide.
 - The conf file is plain bash, `.`-sourced — so it can hold logic, but keep it to
   assignments unless the user asks otherwise. Anything it prints to stdout would
   corrupt the status line.
