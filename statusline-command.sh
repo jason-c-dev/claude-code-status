@@ -255,8 +255,10 @@ if enabled weather && [ -n "$wcode" ] && command -v curl >/dev/null 2>&1; then
   wcache="${TMPDIR:-/tmp}/claude-statusline-weather-${wcode}-${WEATHER_UNITS}"
   wstamp="${wcache}.stamp"
 
-  # mtime in epoch seconds, BSD (macOS) and GNU (Linux) spellings.
-  wmtime=$(stat -f %m "$wstamp" 2>/dev/null || stat -c %Y "$wstamp" 2>/dev/null || echo 0)
+  # mtime in epoch seconds. GNU (Linux) spelling first: on GNU coreutils the BSD
+  # `stat -f` means "filesystem info" and SUCCEEDS with multi-line output, which
+  # would poison the arithmetic below. On macOS `stat -c` fails cleanly.
+  wmtime=$(stat -c %Y "$wstamp" 2>/dev/null || stat -f %m "$wstamp" 2>/dev/null || echo 0)
   wnow=$(date +%s)
   if [ $(( wnow - ${wmtime:-0} )) -ge "${WEATHER_TTL:-900}" ]; then
     # Stamp FIRST, so concurrent status line runs don't all fire a request while
