@@ -47,6 +47,9 @@
 #WEATHER_AIRPORT=""         # "SFO" / "LHR" / "SYD"
 #WEATHER_UNITS="C"          # C | F
 #WEATHER_TTL=900            # seconds between refreshes
+#WEATHER_PROVIDER="wttr"    # wttr | open-meteo (open-meteo needs LAT/LON; the code is just the label)
+#WEATHER_LAT=""             # e.g. 37.6213
+#WEATHER_LON=""             # e.g. -122.3790
 
 # --- icons (keep the trailing space; set "" to drop an icon) ---
 #ICON_HOST="🖥️ "

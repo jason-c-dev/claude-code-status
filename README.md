@@ -181,6 +181,21 @@ a code is always the same width so the line doesn't jump around as conditions
 change, and it's unambiguous where city names aren't (there are more than twenty
 Springfields). It also means the value is validated before it reaches a URL.
 
+**Provider.** By default the reading comes from [wttr.in](https://wttr.in), which
+geocodes the airport code itself. If wttr.in's numbers don't match what you see out the
+window — it runs several degrees hot in some desert regions, for instance — switch to
+[Open-Meteo](https://open-meteo.com), a different forecast model. It needs the
+coordinates spelled out; the airport code stays as the label:
+
+```sh
+WEATHER_PROVIDER="open-meteo"     # wttr | open-meteo
+WEATHER_LAT="37.6213"
+WEATHER_LON="-122.3790"
+```
+
+Neither provider needs an API key. Coordinates are validated as plain signed decimals;
+anything else falls back to wttr.
+
 This is the one segment that leaves your machine. It's built so that never costs you
 latency:
 
