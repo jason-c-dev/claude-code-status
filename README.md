@@ -153,7 +153,7 @@ this README); these five are implemented but off:
 
 | Name | Renders | Notes |
 |------|---------|-------|
-| `host` | `🖥️ skytech` | Which machine the session is on — put it first when you run Claude Code on several boxes. `HOST_STYLE=short\|full`, or `HOST_LABEL` for your own text |
+| `host` | `🖥️ devbox` | Which machine the session is on — put it first when you run Claude Code on several boxes. `HOST_STYLE=short\|full`, or `HOST_LABEL` for your own text |
 | `duration` | `⏱️ 1h 15m` | Session wall-clock time |
 | `lines` | `±+156 -42` | Lines added / removed this session |
 | `limit` | `⏳ 24%` | 5-hour rate limit — Claude.ai Pro/Max only, absent otherwise |
