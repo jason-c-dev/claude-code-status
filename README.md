@@ -19,8 +19,8 @@ dependencies, and no network calls unless you opt into the
 | Context bar | `██████░░░░ 62% · 620.2K tok` | 10-block usage bar — green &lt;30%, yellow 30–59%, red ≥60% — plus exact percentage and the live token count currently in context |
 | Cost | `💰 $1.23` | Yellow. Claude Code's own client-side estimate of the session cost (`cost.total_cost_usd`), not a figure this script derives from tokens. Drops to 3 decimals under a cent. Resets when `/clear` starts a new session. |
 
-Four further segments ship **disabled** — `duration`, `lines`, `limit` and `weather`.
-They cost nothing while off (each is computed lazily), and any of the nine can be
+Five further segments ship **disabled** — `host`, `duration`, `lines`, `limit` and
+`weather`. They cost nothing while off (each is computed lazily), and any of the ten can be
 turned on, off, or reordered from a config file. See [Configuring](#configuring).
 
 Every segment is optional: if a field is missing from the session JSON (early in a
@@ -147,12 +147,13 @@ BAR_WIDTH=20
 CONTEXT_SHOW_TOKENS=0
 ```
 
-`SEGMENTS` controls **both which segments appear and their order**. Five of the nine
+`SEGMENTS` controls **both which segments appear and their order**. Five of the ten
 segments are on by default (`path model git context cost`, the table at the top of
-this README); these four are implemented but off:
+this README); these five are implemented but off:
 
 | Name | Renders | Notes |
 |------|---------|-------|
+| `host` | `🖥️ skytech` | Which machine the session is on — put it first when you run Claude Code on several boxes. `HOST_STYLE=short\|full`, or `HOST_LABEL` for your own text |
 | `duration` | `⏱️ 1h 15m` | Session wall-clock time |
 | `lines` | `±+156 -42` | Lines added / removed this session |
 | `limit` | `⏳ 24%` | 5-hour rate limit — Claude.ai Pro/Max only, absent otherwise |

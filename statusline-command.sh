@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code status line:  📁 <cwd> | <model> | 🌿 <branch> ✚n ↑n | ██████░░░░ 62% | 💰 $0.12
+# Claude Code status line:  🖥️ <host> | 📁 <cwd> | <model> | 🌿 <branch> ✚n ↑n | ██████░░░░ 62% | 💰 $0.12
 #
 # Reads the session JSON Claude Code pipes on stdin. Every segment is optional —
 # a missing field (or a cwd that isn't a git repo) drops the segment AND its
@@ -19,13 +19,15 @@ BLUE=$'\033[94m'; RED=$'\033[91m'; WHITE=$'\033[97m'; DIM=$'\033[2;37m'; RESET=$
 # ---- settings (override in ~/.claude/statusline.conf) ------------------------
 
 # Which segments to show, in display order. Available:
-#   path model git context cost duration lines limit weather
+#   host path model git context cost duration lines limit weather
 SEGMENTS="path model git context cost"
 
 SEPARATOR=" | "          # text between segments
 SEP_COLOR="$DIM"
 
 PATH_STYLE="tilde"       # tilde | full | basename
+HOST_STYLE="short"       # short (up to the first dot) | full (FQDN)
+HOST_LABEL=""            # set to replace the hostname with your own text
 MODEL_SHOW_WINDOW=1      # append (1M)/(200K) to the model name
 GIT_SHOW_DIRTY=1         # ✚n uncommitted-file count
 GIT_SHOW_AHEAD_BEHIND=1  # ↑n/↓n vs upstream
@@ -48,6 +50,7 @@ WEATHER_AIRPORT=""       # "SFO" / "LHR" / "SYD" — required, 3 letters
 WEATHER_UNITS="C"        # C | F
 WEATHER_TTL=900          # seconds before a background refresh is triggered
 
+ICON_HOST="🖥️ "
 ICON_PATH="📁 "
 ICON_GIT="🌿 "
 ICON_COST="💰 "
@@ -56,6 +59,7 @@ ICON_LINES="±"
 ICON_LIMIT="⏳ "
 ICON_WEATHER="✈️ "
 
+COLOR_HOST="$BLUE"
 COLOR_PATH="$CYAN"
 COLOR_MODEL="$MAGENTA"
 COLOR_GIT="$GREEN"
@@ -79,6 +83,20 @@ enabled() { case " $SEGMENTS " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 j() { echo "$input" | jq -r "$1" 2>/dev/null; }
 
 rawdir=$(j '.workspace.current_dir // .cwd // empty')
+
+# ---- host --------------------------------------------------------------------
+# Which machine this session is on. Earns its place when you drive Claude Code on
+# several boxes (over SSH, or one terminal per machine) and the lines look alike.
+host_seg=""
+if enabled host; then
+  case "$HOST_STYLE" in
+    full) hostlabel=$(hostname -f 2>/dev/null || hostname 2>/dev/null) ;;
+    *)    hostlabel=$(hostname -s 2>/dev/null || hostname 2>/dev/null) ;;
+  esac
+  [ -n "$hostlabel" ] || hostlabel="${HOSTNAME%%.*}"
+  [ -n "$HOST_LABEL" ] && hostlabel="$HOST_LABEL"
+  [ -n "$hostlabel" ] && host_seg="${COLOR_HOST}${ICON_HOST}${hostlabel}${RESET}"
+fi
 
 # ---- path --------------------------------------------------------------------
 dir=""
@@ -290,6 +308,7 @@ fi
 segments=()
 for name in $SEGMENTS; do
   case "$name" in
+    host)     [ -n "$host_seg" ]  && segments+=("$host_seg") ;;
     path)     [ -n "$dir" ]       && segments+=("${COLOR_PATH}${ICON_PATH}${dir}${RESET}") ;;
     model)    [ -n "$model" ]     && segments+=("${COLOR_MODEL}${model}${RESET}") ;;
     git)      [ -n "$git_seg" ]   && segments+=("$git_seg") ;;
