@@ -49,6 +49,14 @@ CONTEXT_SHOW_TOKENS=1    # "· 620.2K tok" after the bar
 WEATHER_AIRPORT=""       # "SFO" / "LHR" / "SYD" — required, 3 letters
 WEATHER_UNITS="C"        # C | F
 WEATHER_TTL=900          # seconds before a background refresh is triggered
+# Where the reading comes from. `wttr` (default) geocodes the airport code itself
+# and needs nothing else. `open-meteo` is a different forecast model that tracks
+# station readings more closely in some regions (wttr.in runs several degrees hot
+# in desert basins, for example); it needs the coordinates spelled out, and the
+# airport code becomes just the label.
+WEATHER_PROVIDER="wttr"  # wttr | open-meteo
+WEATHER_LAT=""           # decimal degrees, e.g. 37.6213 — open-meteo only
+WEATHER_LON=""           # decimal degrees, e.g. -122.3790 — open-meteo only
 
 ICON_HOST="🖥️ "
 ICON_PATH="📁 "
@@ -257,7 +265,8 @@ fi
 #   2. A refresh is a detached background process with every fd redirected, so
 #      Claude Code's 300ms debounce can't be held open by a slow request.
 # wttr.in does geocoding, condition->emoji and unit conversion server-side, so a
-# reading costs one request and no API key.
+# reading costs one request and no API key. Open-Meteo is the same one request,
+# no key, but returns JSON, so the emoji mapping happens here.
 weather_seg=""
 # Normalise to an uppercase 3-letter code. Anything else — a city name, a typo, a
 # code with punctuation — fails this check and the segment stays off, rather than
@@ -268,9 +277,19 @@ case "$WEATHER_AIRPORT" in
 esac
 
 if enabled weather && [ -n "$wcode" ] && command -v curl >/dev/null 2>&1; then
-  # Cache key covers code+units so changing either doesn't serve stale data from
-  # the old settings.
-  wcache="${TMPDIR:-/tmp}/claude-statusline-weather-${wcode}-${WEATHER_UNITS}"
+  # Coordinates are validated the same way the code is: a plain signed decimal or
+  # nothing. Anything else drops the provider back to wttr rather than building a
+  # URL out of it.
+  wprov="wttr"
+  wnum='^-?[0-9]+(\.[0-9]+)?$'
+  case "$WEATHER_PROVIDER" in
+    [Oo]pen-[Mm]eteo|[Oo]pen[Mm]eteo|[Oo]pen_[Mm]eteo)
+      [[ "$WEATHER_LAT" =~ $wnum && "$WEATHER_LON" =~ $wnum ]] && wprov="open-meteo" ;;
+  esac
+
+  # Cache key covers provider+code+units so changing any of them doesn't serve
+  # stale data from the old settings.
+  wcache="${TMPDIR:-/tmp}/claude-statusline-weather-${wprov}-${wcode}-${WEATHER_UNITS}"
   wstamp="${wcache}.stamp"
 
   # mtime in epoch seconds. GNU (Linux) spelling first: on GNU coreutils the BSD
@@ -282,14 +301,41 @@ if enabled weather && [ -n "$wcode" ] && command -v curl >/dev/null 2>&1; then
     # Stamp FIRST, so concurrent status line runs don't all fire a request while
     # one is already in flight.
     : > "$wstamp" 2>/dev/null
-    case "$WEATHER_UNITS" in [Ff]*) wunit="u" ;; *) wunit="m" ;; esac
     (
       wtmp="${wcache}.$$"
-      if curl -sf --max-time 8 "https://wttr.in/${wcode}?format=%c%t&${wunit}" -o "$wtmp" 2>/dev/null; then
-        # Atomic swap so a render never sees a half-written file.
-        mv -f "$wtmp" "$wcache" 2>/dev/null
+      if [ "$wprov" = "open-meteo" ]; then
+        # Open-Meteo returns JSON: a WMO weather code, a day/night flag and the
+        # temperature already in the requested unit. Map the code to the same
+        # emoji vocabulary wttr.in uses so the segment looks identical either way.
+        case "$WEATHER_UNITS" in [Ff]*) wtu="fahrenheit"; wdeg="°F" ;; *) wtu="celsius"; wdeg="°C" ;; esac
+        wurl="https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m,weather_code,is_day&temperature_unit=${wtu}"
+        if wjson=$(curl -sf --max-time 8 "$wurl" 2>/dev/null) &&
+           wread=$(printf '%s' "$wjson" | jq -r '.current | select(.temperature_2m != null) | "\(.weather_code // 0) \(.is_day // 1) \(.temperature_2m | round)"' 2>/dev/null) &&
+           [ -n "$wread" ]; then
+          set -- $wread
+          case "$1" in
+            0)                 [ "$2" = "0" ] && wicon="🌙" || wicon="☀️" ;;
+            1|2)               [ "$2" = "0" ] && wicon="☁️" || wicon="⛅" ;;
+            3)                 wicon="☁️" ;;
+            45|48)             wicon="🌫️" ;;
+            51|53|55|56|57|61) wicon="🌦️" ;;
+            63|65|66|67|80|81|82) wicon="🌧️" ;;
+            71|73|75|77|85|86) wicon="🌨️" ;;
+            95|96|99)          wicon="⛈️" ;;
+            *)                 wicon="☁️" ;;
+          esac
+          printf '%s %s%s' "$wicon" "$3" "$wdeg" > "$wtmp" 2>/dev/null && mv -f "$wtmp" "$wcache" 2>/dev/null
+        else
+          rm -f "$wtmp" 2>/dev/null
+        fi
       else
-        rm -f "$wtmp" 2>/dev/null
+        case "$WEATHER_UNITS" in [Ff]*) wunit="u" ;; *) wunit="m" ;; esac
+        if curl -sf --max-time 8 "https://wttr.in/${wcode}?format=%c%t&${wunit}" -o "$wtmp" 2>/dev/null; then
+          # Atomic swap so a render never sees a half-written file.
+          mv -f "$wtmp" "$wcache" 2>/dev/null
+        else
+          rm -f "$wtmp" 2>/dev/null
+        fi
       fi
     ) >/dev/null 2>&1 </dev/null &
     disown 2>/dev/null
